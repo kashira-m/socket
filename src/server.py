@@ -1,4 +1,5 @@
 import socket
+import threading
 
 
 host = '192.168.11.11'
@@ -9,19 +10,29 @@ ss.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 ss.bind((host, port))
 ss.listen(2)
 
+
+def sendThread(socket):
+    while True:
+        print("type messages")
+        msg = input()
+        socket.sendall(msg.encode('utf-8'))
+
+
+def receiveThread(socket):
+    while True:
+        res = socket.recv(2048)
+        print("Received -> %s" % res.decode('utf-8'))
+
+
 print("Waiting for connections")
 client, addr = ss.accept()
 
-while True:
-    rcvmsg = client.recv(2048)
-    print(rcvmsg.decode('utf-8'))
-    if rcvmsg == '':
-        break
-    print('type message')
-    s_msg = input()
-    if s_msg == '':
-        break
+t1 = threading.Thread(target=sendThread, args=(client, ))
+t2 = threading.Thread(target=receiveThread, args=(client, ))
 
-    client.sendall(s_msg.encode('utf-8'))
+t1.start()
+t2.start()
+t1.join()
+t2.join()
 
 client.close()
